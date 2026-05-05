@@ -1,81 +1,81 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/SHM9MYZJ)
-# Valura AI — Team Lead Project Assignment
+# Valura AI — Portfolio Agent Microservice
 
-You have been given access to this repository as part of the Valura AI team lead hiring process.
+An AI-powered wealth management microservice designed to help users build, monitor, grow, and protect their investment portfolios.
 
-**Read [`ASSIGNMENT.md`](ASSIGNMENT.md) in full before writing a single line of code.**
+## Setup and Installation
 
----
+**Requirements:** Python 3.11+, an OpenAI or Groq API key.
 
-## What you're building
+1. **Clone the repository and enter the directory:**
+   ```bash
+   git clone <your-repo-url>
+   cd <repo-name>
+   ```
 
-An AI agent ecosystem that helps a novice investor **build, monitor, grow, and protect** their portfolio. See [`ASSIGNMENT.md`](ASSIGNMENT.md) for the full mission, scope, and constraints.
+2. **Set up a virtual environment:**
+   ```bash
+   python -m venv venv
+   # macOS/Linux:
+   source venv/bin/activate
+   # Windows:
+   venv\Scripts\activate
+   ```
 
----
+3. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-## Setup
+4. **Configure Environment Variables:**
+   Copy the `.env.example` file to create your local `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+   Add your API keys to the `.env` file (see required variables below).
 
-**Requirements:** Python 3.11+, an OpenAI API key.
+## Environment Variables
 
-**Persistence is your choice.** Postgres, SQLite, or in-memory — pick one and defend it in your README. `DATABASE_URL` in `.env.example` is optional.
+The application expects the following variables to be set in your `.env` file:
 
-**Streaming is required.** SSE only. Use `sse-starlette`, FastAPI's `StreamingResponse`, or roll your own — your call.
+- `OPENAI_API_KEY`: Fallback LLM provider key for intent classification.
+- `GROQ_API_KEY`: (Recommended) Primary LLM provider key for fast, low-cost intent classification using Llama 3.
+- `LLM_MODEL`: The model string to use (defaults to `llama-3.1-8b-instant` if Groq is used, otherwise `gpt-4o-mini`).
+
+*Note: `DATABASE_URL` from the example is optional for this iteration as memory is handled in-memory.*
+
+## Running the Application
+
+Start the FastAPI streaming server with Uvicorn:
 
 ```bash
-git clone <your-classroom-repo-url>
-cd <repo-name>
-
-python -m venv venv
-source venv/bin/activate        # Linux/macOS
-venv\Scripts\activate           # Windows
-
-pip install -r requirements.txt
-
-cp .env.example .env
-# Fill in OPENAI_API_KEY
+uvicorn src.main:app --reload
 ```
 
-Use `gpt-4o-mini` while developing to keep costs down. Evaluation runs against `gpt-4.1`.
+The server will be available at `http://127.0.0.1:8000`. It serves a simple frontend at the root `/` to test the streaming endpoints.
 
----
-
-## Running Tests
+### Running Tests
 
 ```bash
 pytest tests/ -v
 ```
 
-Tests must pass without an `OPENAI_API_KEY` set — mock the LLM. We will run `pytest tests/ -v` on your repo.
+## Architecture and Design Decisions
 
----
+Here are some of the key, non-obvious technical decisions made during the implementation:
 
-## Repository Structure
+1. **Hybrid Local Safety Guard:** 
+   The safety guard (`src/safety.py`) evaluates inputs synchronously *before* they hit the LLM. It uses regex patterns and keyword matching to catch harmful financial requests (insider trading, market manipulation) and scores them against educational signals. This ensures zero latency and zero LLM cost for obvious safety violations.
 
-When you submit, your repository must contain:
+2. **Groq for Low-Latency Classification:** 
+   Intent classification (`src/classifier.py`) uses Groq (`llama-3.1-8b-instant`) by default instead of OpenAI to drastically reduce latency and cost. Fast routing is critical for user experience, and Groq's inference speeds make the classification layer virtually unnoticeable. The application falls back seamlessly to OpenAI's `gpt-4o-mini` if a Groq key is absent.
 
-```
-README.md   ← overwrite this with your own (setup, decisions, library choices, video link)
-src/        ← all code
-tests/      ← all tests, must pass with pytest
-```
+3. **In-Memory Conversation Persistence:**
+   For this microservice, conversation histories and user profiles are stored in-memory (and via local mock JSON files in `fixtures/users/`). This minimizes dependencies (no Postgres/Redis required locally) while still perfectly validating the SSE logic and agent state transitions.
 
-`fixtures/`, `pytest.ini`, `requirements.txt`, `.env.example`, and `.github/` are part of the scaffold — leave them in place. Do not delete `ASSIGNMENT.md`.
+4. **Live Market Data via `yfinance`:**
+   The Portfolio Health agent fetches live prices and benchmark comparisons using `yfinance`. It converts foreign assets to the user's base currency using live FX rates dynamically. It falls back gracefully to cost-basis data if the yfinance fetch fails or times out.
 
----
+## Defence Video
 
-## Submission
-
-- Push commits **throughout** your work — we read the git log
-- Your `README.md` must:
-  - Explain how to run your code
-  - List every required environment variable
-  - Document the non-obvious decisions you made
-  - Link your defence video (≤ 10 min — see `ASSIGNMENT.md`)
-- Deadline: **3 days** from the date you accepted this assignment
-- Defence video: due within **24 hours** of your final commit
-
----
-
-## Environment
-
-You self-host everything. We do not provide credentials. See `.env.example` for the variables you'll need.
+[**Link to Defence Video**] (Insert URL here)
+*(Please replace the placeholder with the link to your video presentation).*
