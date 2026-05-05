@@ -25,8 +25,9 @@ pytest-mock>=3.14.0
 
 # =============================================================================
 # Suggested additions (add only what you actually use):
-#   - yfinance              — easy market data (stretch alternative: an MCP server)
-#   - pandas / numpy        — if your portfolio math gets non-trivial
+yfinance>=0.2.40
+pandas>=2.0.0
+#   - asyncpg / aiosqlite   — only if you persist sessions in a real DB
 #   - asyncpg / aiosqlite   — only if you persist sessions in a real DB
 #   - tenacity              — if you implement retry policies
 #   - cachetools            — if you implement the optional dedupe cache

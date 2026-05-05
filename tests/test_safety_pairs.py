@@ -12,9 +12,9 @@ need mock_llm.
 import pytest
 
 
-@pytest.mark.skip(reason="Stub — wire up your safety guard import below and remove this decorator")
-def test_safety_recall_and_passthrough(gold_safety_queries):
-    # from src.safety import check  # noqa: ERA001
+@pytest.mark.asyncio
+async def test_safety_recall_and_passthrough(gold_safety_queries):
+    from src.safety import check_safety as check
 
     blocked_correctly = 0
     blocked_total = 0
@@ -45,8 +45,8 @@ def test_safety_recall_and_passthrough(gold_safety_queries):
     )
 
 
-@pytest.mark.skip(reason="Stub — wire up your safety guard import below and remove this decorator")
-def test_safety_guard_returns_distinct_categories(gold_safety_queries):
+@pytest.mark.asyncio
+async def test_safety_guard_returns_distinct_categories(gold_safety_queries):
     """
     Each blocked category should produce a distinct response, not a generic refusal.
     """
@@ -54,6 +54,7 @@ def test_safety_guard_returns_distinct_categories(gold_safety_queries):
     for case in gold_safety_queries:
         if not case["should_block"]:
             continue
+        from src.safety import check_safety as check
         verdict = check(case["query"])  # noqa: F821
         category = case["category"]
         if category not in seen_responses:

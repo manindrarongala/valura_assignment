@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Valura AI - Portfolio Assistant</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-panel: #1e293b;
+            --bg-bubble-user: #3b82f6;
+            --bg-bubble-bot: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --border: #334155;
+            
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar / Header Styling */
+        .sidebar {
+            width: 260px;
+            background-color: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        select {
+            width: 100%;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 10px;
+            border-radius: 6px;
+            outline: none;
+            font-size: 0.95rem;
+        }
+        
+        select:focus {
+            border-color: var(--accent);
+        }
+
+        /* Main Chat Area */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .chat-history {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .message {
+            max-width: 80%;
+            display: flex;
+            flex-direction: column;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .message.user {
+            align-self: flex-end;
+        }
+
+        .message.bot {
+            align-self: flex-start;
+        }
+
+        .bubble {
+            padding: 14px 18px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .message.user .bubble {
+            background-color: var(--bg-bubble-user);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.bot .bubble {
+            background-color: var(--bg-bubble-bot);
+            border-bottom-left-radius: 4px;
+        }
+
+        .status-bubble {
+            display: inline-block;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-style: italic;
+            padding: 10px 14px;
+            background: transparent;
+        }
+        
+        .status-bubble .dots::after {
+            content: '';
+            animation: dots 1.5s infinite steps(4, end);
+        }
+
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Input Area */
+        .input-container {
+            padding: 20px 30px;
+            background-color: var(--bg-dark);
+            border-top: 1px solid var(--border);
+        }
+
+        .input-box {
+            display: flex;
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 8px 12px;
+            transition: border-color 0.2s;
+        }
+        
+        .input-box:focus-within {
+            border-color: var(--accent);
+        }
+
+        input[type="text"] {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            padding: 10px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        button.send-btn {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button.send-btn:hover {
+            background-color: var(--accent-hover);
+        }
+        
+        button.send-btn:disabled {
+            background-color: var(--bg-bubble-bot);
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        /* Structured Render Cards */
+        .portfolio-card {
+            background-color: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 10px;
+        }
+
+        .metric-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .metric-box {
+            flex: 1;
+            min-width: 120px;
+            background-color: rgba(255, 255, 255, 0.03);
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        
+        .val-positive { color: var(--success); }
+        .val-negative { color: var(--danger); }
+        
+        .observation {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        
+        .obs-success { background-color: rgba(16, 185, 129, 0.1); border-left: 3px solid var(--success); }
+        .obs-warning { background-color: rgba(245, 158, 11, 0.1); border-left: 3px solid var(--warning); }
+        .obs-info { background-color: rgba(59, 130, 246, 0.1); border-left: 3px solid var(--info); }
+        
+        .disclaimer {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 16px;
+            font-style: italic;
+        }
+        
+        .stub-card {
+            background-color: rgba(245, 158, 11, 0.1);
+            border: 1px dashed var(--warning);
+            padding: 16px;
+            border-radius: 8px;
+            color: var(--warning);
+        }
+        
+        .error-card {
+            background-color: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--danger);
+            padding: 16px;
+            border-radius: 8px;
+            color: var(--danger);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="logo">
+            <div class="logo-icon"></div>
+            Valura AI
+        </div>
+        
+        <div class="form-group">
+            <label for="user-select">Testing User Profile</label>
+            <select id="user-select">
+                <option value="usr_001">User 001 (Active Trader)</option>
+                <option value="usr_003">User 003 (Concentrated)</option>
+                <option value="usr_004">User 004 (Empty Portfolio)</option>
+                <option value="usr_006">User 006 (Multi-currency)</option>
+                <option value="usr_008">User 008 (Retiree)</option>
+            </select>
+        </div>
+        
+        <div style="margin-top: auto; font-size: 0.8rem; color: var(--text-muted);">
+            Session ID is hardcoded for demo purposes to enable conversation history memory.
+        </div>
+    </div>
+
+    <div class="chat-container">
+        <div class="chat-history" id="chat-history">
+            <div class="message bot">
+                <div class="bubble">
+                    Hello! I'm your Valura AI assistant. You can ask me about your portfolio health, market research, or anything else!
+                </div>
+            </div>
+        </div>
+
+        <div class="input-container">
+            <form id="chat-form">
+                <div class="input-box">
+                    <input type="text" id="query-input" placeholder="How is my portfolio doing?" autocomplete="off" required>
+                    <button type="submit" class="send-btn" id="send-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const chatHistory = document.getElementById('chat-history');
+        const chatForm = document.getElementById('chat-form');
+        const queryInput = document.getElementById('query-input');
+        const userSelect = document.getElementById('user-select');
+        const sendBtn = document.getElementById('send-btn');
+        
+        // Single session ID for the current page load to test memory
+        const sessionId = "sess_" + Math.random().toString(36).substring(2, 9);
+
+        function scrollToBottom() {
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function appendUserMessage(text) {
+            const div = document.createElement('div');
+            div.className = 'message user';
+            div.innerHTML = `<div class="bubble">${escapeHtml(text)}</div>`;
+            chatHistory.appendChild(div);
+            scrollToBottom();
+        }
+
+        function appendStatusBubble() {
+            const div = document.createElement('div');
+            div.className = 'message bot status-msg';
+            div.innerHTML = `<div class="status-bubble">Analyzing request<span class="dots"></span></div>`;
+            chatHistory.appendChild(div);
+            scrollToBottom();
+            return div;
+        }
+
+        function removeStatusBubbles() {
+            document.querySelectorAll('.status-msg').forEach(el => el.remove());
+        }
+
+        function appendBotMessage(contentHtml) {
+            removeStatusBubbles();
+            const div = document.createElement('div');
+            div.className = 'message bot';
+            div.innerHTML = `<div class="bubble">${contentHtml}</div>`;
+            chatHistory.appendChild(div);
+            scrollToBottom();
+        }
+
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function formatPortfolioResponse(data) {
+            if (!data.data || !data.data.observations) return "Error parsing portfolio data.";
+            
+            let html = `<strong>Portfolio Health Report</strong><div class="portfolio-card">`;
+            
+            // Metrics
+            if (data.data.performance && data.data.benchmark_comparison) {
+                const ret = data.data.performance.total_return_pct;
+                const retClass = ret >= 0 ? 'val-positive' : 'val-negative';
+                const alpha = data.data.benchmark_comparison.alpha_pct;
+                const alphaClass = alpha >= 0 ? 'val-positive' : 'val-negative';
+                
+                html += `
+                <div class="metric-row">
+                    <div class="metric-box">
+                        <div class="metric-label">Total Return</div>
+                        <div class="metric-value ${retClass}">${ret > 0 ? '+' : ''}${ret.toFixed(1)}%</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">vs ${data.data.benchmark_comparison.benchmark}</div>
+                        <div class="metric-value ${alphaClass}">${alpha > 0 ? '+' : ''}${alpha.toFixed(1)}%</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Concentration</div>
+                        <div class="metric-value" style="color: var(--text-main); text-transform: capitalize;">${data.data.concentration_risk.flag}</div>
+                    </div>
+                </div>`;
+            }
+
+            // Observations
+            data.data.observations.forEach(obs => {
+                const cls = `obs-${obs.severity}`;
+                html += `<div class="observation ${cls}">${escapeHtml(obs.text)}</div>`;
+            });
+
+            // Disclaimer
+            if (data.data.disclaimer) {
+                html += `<div class="disclaimer">${escapeHtml(data.data.disclaimer)}</div>`;
+            }
+
+            html += `</div>`;
+            return html;
+        }
+
+        function formatStubResponse(data) {
+            return `
+            <div class="stub-card">
+                <strong>Agent Routed:</strong> ${escapeHtml(data.agent || 'Unknown')}<br>
+                <strong>Status:</strong> ${escapeHtml(data.message || 'Not implemented')}
+            </div>`;
+        }
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const query = queryInput.value.trim();
+            if (!query) return;
+
+            const userId = userSelect.value;
+            
+            appendUserMessage(query);
+            queryInput.value = '';
+            queryInput.disabled = true;
+            sendBtn.disabled = true;
+
+            const statusEl = appendStatusBubble();
+
+            try {
+                // Fetch with SSE reading logic
+                const response = await fetch('/query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        query: query,
+                        user_id: userId
+                    })
+                });
+
+                if (!response.body) throw new Error("ReadableStream not supported in this browser.");
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder("utf-8");
+                let buffer = "";
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    
+                    // Keep the last incomplete line in the buffer
+                    buffer = lines.pop();
+
+                    let currentEvent = null;
+
+                    for (let line of lines) {
+                        line = line.trim();
+                        if (line.startsWith('event:')) {
+                            currentEvent = line.substring(6).trim();
+                        } else if (line.startsWith('data:')) {
+                            const dataStr = line.substring(5).trim();
+                            
+                            if (currentEvent === 'error') {
+                                appendBotMessage(`<div class="error-card">${escapeHtml(dataStr)}</div>`);
+                            } 
+                            else if (currentEvent === 'message') {
+                                try {
+                                    const json = JSON.parse(dataStr);
+                                    if (json.agent === 'portfolio_health') {
+                                        appendBotMessage(formatPortfolioResponse(json));
+                                    } else {
+                                        appendBotMessage(formatStubResponse(json));
+                                    }
+                                } catch (err) {
+                                    appendBotMessage(escapeHtml(dataStr));
+                                }
+                            }
+                            // If status, we do nothing as the loading bubble is already shown
+                        }
+                    }
+                }
+            } catch (error) {
+                appendBotMessage(`<div class="error-card">Network Error: ${error.message}</div>`);
+            } finally {
+                removeStatusBubbles();
+                queryInput.disabled = false;
+                sendBtn.disabled = false;
+                queryInput.focus();
+            }
+        });
+    </script>
+</body>
+</html>
